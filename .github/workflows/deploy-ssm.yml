@@ -10,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
 
+          aws-region: eu-north-1   # change if needed
       - name: Deploy using SSM
         run: |
           aws ssm send-command \
