@@ -1,0 +1,28 @@
+name: Deploy to EC2 via SSM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Deploy using SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Actions deployment" \
+            --parameters 'commands=[
+              "set -e",
+              "APP_DIR=/home/ec2-user/app",
+              "REPO=https://github.com/sraviforaws/test_auto_deploy.git",
+              "if [ ! -d \"$APP_DIR/.git\" ]; then git clone $REPO $APP_DIR; fi",
+              "cd $APP_DIR",
+              "git pull origin main",
+              "python3 myfile.py"
+            ]'
