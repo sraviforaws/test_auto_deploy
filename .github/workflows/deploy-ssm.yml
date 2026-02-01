@@ -38,7 +38,7 @@ jobs:
             --comment "GitHub Actions deployment" \
             --parameters 'commands=[
               "set -e",
-              "if [ ! -d \"$APP_DIR/.git\" ]; then git clone $REPO $APP_DIR; fi",
+              "if [ ! -d \"$APP_DIR/.git\" ]; then git clone https://github.com/sraviforaws/test_auto_deploy.git /home/ec2-user/app; fi",
               "cd $APP_DIR",
               "git pull origin main",
               "python3 -u myfile.py > output.log 2>&1",
