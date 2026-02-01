@@ -22,7 +22,7 @@ jobs:
             set -e
 
             APP_DIR=/home/ec2-user/app
-            REPO_URL=https://github.com/YOUR_ORG/YOUR_REPO.git
+            REPO_URL=https://${{ secrets.GH_TOKEN }}@github.com/YOUR_ORG/YOUR_REPO.git
 
             if [ ! -d "$APP_DIR/.git" ]; then
               echo "Repo not found. Cloning..."
