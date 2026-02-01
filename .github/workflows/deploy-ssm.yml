@@ -36,14 +36,16 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Actions deployment" \
-            --parameters 'commands=[
-              "set -e",
-              "if [ ! -d \"$APP_DIR/.git\" ]; then git clone https://github.com/sraviforaws/test_auto_deploy.git /home/ec2-user/app; fi",
-              "cd $APP_DIR",
-              "git pull origin main",
-              "python3 -u myfile.py > output.log 2>&1",
-              "cat output.log"
-            ]' \
+            --parameters commands="$(cat <<'EOC'
+              if [ ! -d /home/ec2-user/app/.git ]; then
+                git clone https://github.com/sraviforaws/test_auto_deploy.git /home/ec2-user/app
+              fi
+              cd /home/ec2-user/app
+              git pull origin main
+              python3 -u myfile.py > output.log 2>&1
+              cat output.log
+              EOC
+              )" \
             --query "Command.CommandId" --output text)
 
           echo "Command ID: $CMD_ID"
