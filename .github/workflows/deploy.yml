@@ -36,4 +36,4 @@ jobs:
             fi
 
             cd $APP_DIR
-            python myfile.py
+            python3 myfile.py
