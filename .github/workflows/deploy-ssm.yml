@@ -57,7 +57,10 @@ jobs:
               --query "CommandInvocations[0].Status" --output text)
             echo "Status: $STATUS"
           done
-
+          STDOUT=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query "StandardOutputContent" --output text)
+          echo "$STDOUT"
           # Fetch stderr
           STDERR=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
             --instance-id "$INSTANCE_ID" \
