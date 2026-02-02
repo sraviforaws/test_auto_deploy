@@ -52,7 +52,7 @@ jobs:
               "echo \"Step 2: Current user: $(whoami)\"",
               "echo \"Step 3: Running Python script...\"",
               "python3 -u myfile.py > output.log 2>&1",
-              "echo \"------ Python Output ------\"",
+              #"echo \"------ Python Output ------\"",
               "cat output.log"
             ]' \
             --query "Command.CommandId" --output text)
