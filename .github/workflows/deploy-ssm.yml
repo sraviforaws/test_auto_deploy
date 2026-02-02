@@ -1,4 +1,3 @@
-
 name: Deploy Python App via SSM
 
 on:
@@ -22,7 +21,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1   # Change to your region
 
-      # 3️⃣ Send SSM command and capture Command ID
+      # 3️⃣ Send SSM command and deploy
       - name: Deploy to EC2 via SSM
         id: ssm
         run: |
@@ -38,44 +37,59 @@ jobs:
             --comment "GitHub Actions deployment" \
             --parameters 'commands=[
               "set -e",
-              "if [ ! -d \"'"$APP_DIR"'/.git\" ]; then git clone '"$REPO"' '"$APP_DIR"'; fi",
               "export HOME=/home/ec2-user",
+              "echo \"Step 1: Checking if app directory exists...\"",
+              "if [ ! -d \"'"$APP_DIR"'/.git\" ]; then",
+              "  echo \"Directory not found. Cloning repo...\"",
+              "  git clone '"$REPO"' '"$APP_DIR"'",
+              "else",
+              "  echo \"Directory exists. Pulling latest changes...\"",
+              "  cd '"$APP_DIR"'",
+              "  git pull origin main",
+              "fi",
               "git config --global --add safe.directory '"$APP_DIR"'",
               "cd '"$APP_DIR"'",
-              "whoami",
-              "git pull origin main",
-              "python3 -u myfile.py"
+              "echo \"Step 2: Current user: $(whoami)\"",
+              "echo \"Step 3: Running Python script...\"",
+              "python3 -u myfile.py > output.log 2>&1",
+              "echo \"------ Python Output ------\"",
+              "cat output.log"
             ]' \
             --query "Command.CommandId" --output text)
 
           echo "Command ID: $CMD_ID"
 
-          # Wait for command to finish
+          # Wait for SSM command to complete
           STATUS="Pending"
           while [[ "$STATUS" == "Pending" || "$STATUS" == "InProgress" ]]; do
             sleep 3
             STATUS=$(aws ssm list-command-invocations --command-id "$CMD_ID" --details \
               --query "CommandInvocations[0].Status" --output text)
-            echo "Status: $STATUS"
+            echo "SSM command status: $STATUS"
           done
-          # Fetch stdout
+
+          # Fetch stdout and stderr
           STDOUT=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
             --instance-id "$INSTANCE_ID" \
             --query "StandardOutputContent" --output text)
-          echo "$STDOUT"
-          # Fetch stderr
+
           STDERR=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
             --instance-id "$INSTANCE_ID" \
             --query "StandardErrorContent" --output text)
+
+          echo "------ Python Output ------"
+          echo "$STDOUT"
+
+          # Fail the workflow if the SSM command failed
           if [[ "$STATUS" != "Success" ]]; then
-          echo "SSM command failed with status: $STATUS"
-          echo "------ Errors ------"
-          echo "$STDERR"
-          exit 1  # Fail GitHub Actions step
+            echo "SSM command failed with status: $STATUS"
+            echo "------ Errors ------"
+            echo "$STDERR"
+            exit 1
           fi
 
-          
-
-
-          
-
+          # Print any warnings/errors without failing
+          if [ -n "$STDERR" ]; then
+            echo "------ Warnings / Errors ------"
+            echo "$STDERR"
+          fi
