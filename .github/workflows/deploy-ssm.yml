@@ -43,8 +43,7 @@ jobs:
               "cd '"$APP_DIR"'",
               "whoami",
               "git pull origin main",
-              "python3 -u myfile.py > output.log 2>&1",
-              "cat output.log"
+              "python3 -u myfile.py"
             ]' \
             --query "Command.CommandId" --output text)
 
