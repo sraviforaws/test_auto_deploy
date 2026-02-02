@@ -22,10 +22,9 @@ jobs:
           aws-region: eu-north-1   # Change to your region
 
       # 3️⃣ Send SSM command and capture Command ID
-      - name: Deploy to EC2 via SSM
+            - name: Deploy to EC2 via SSM
         id: ssm
         run: |
-          # Variables
           INSTANCE_ID="${{ secrets.EC2_INSTANCE_ID }}"
           APP_DIR="/home/ec2-user/app"
           REPO="https://github.com/sraviforaws/test_auto_deploy.git"
@@ -36,14 +35,14 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Actions deployment" \
-            --parameters commands=[
+            --parameters 'commands=[
               "set -e",
-              "if [ ! -d \"$APP_DIR/.git\" ]; then git clone $REPO $APP_DIR; fi",
-              "cd $APP_DIR",
+              "if [ ! -d \"'"$APP_DIR"'/.git\" ]; then git clone '"$REPO"' '"$APP_DIR"'; fi",
+              "cd '"$APP_DIR"'",
               "git pull origin main",
               "python3 -u myfile.py > output.log 2>&1",
               "cat output.log"
-            ] \
+            ]' \
             --query "Command.CommandId" --output text)
 
           echo "Command ID: $CMD_ID"
@@ -72,3 +71,4 @@ jobs:
             echo "------ Errors ------"
             echo "$STDERR"
           fi
+
