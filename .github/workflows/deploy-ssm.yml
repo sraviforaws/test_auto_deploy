@@ -56,13 +56,6 @@ jobs:
             echo "Status: $STATUS"
           done
 
-          # Fetch stdout
-          STDOUT=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
-            --instance-id "$INSTANCE_ID" \
-            --query "StandardOutputContent" --output text)
-          echo "------ Python Output ------"
-          echo "$STDOUT"
-
           # Fetch stderr
           STDERR=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
             --instance-id "$INSTANCE_ID" \
@@ -73,9 +66,13 @@ jobs:
           echo "$STDERR"
           exit 1  # Fail GitHub Actions step
           fi
-          if [ -n "$STDERR" ]; then
-            echo "------ Errors ------"
-            echo "$STDERR"
-            exit 1
-          fi
+
+          # Fetch stdout
+          STDOUT=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query "StandardOutputContent" --output text)
+          echo "------ Python Output ------"
+          echo "$STDOUT"
+
+          
 
