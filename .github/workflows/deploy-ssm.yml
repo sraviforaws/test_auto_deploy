@@ -51,7 +51,9 @@ jobs:
               "cd '"$APP_DIR"'",
               "echo \"Step 2: Current user: $(whoami)\"",
               "echo \"Step 3: Running Python script...\"",
-              "python3 -u myfile.py > output.log 2>&1"
+              "python3 -u myfile.py > output.log 2>&1",
+              "echo \"------ Python Output ------\"",
+              "cat output.log"
             ]' \
             --query "Command.CommandId" --output text)
 
@@ -75,7 +77,7 @@ jobs:
             --instance-id "$INSTANCE_ID" \
             --query "StandardErrorContent" --output text)
 
-          echo "------ Python Output ------"
+          #echo "------ Python Output ------"
           echo "$STDOUT"
 
           # Fail the workflow if the SSM command failed
