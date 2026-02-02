@@ -1,1 +1,1 @@
-print("hi world for now")
+rint("hi world for now")
