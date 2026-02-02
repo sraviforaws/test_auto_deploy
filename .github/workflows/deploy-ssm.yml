@@ -22,7 +22,7 @@ jobs:
           aws-region: eu-north-1   # Change to your region
 
       # 3️⃣ Send SSM command and capture Command ID
-            - name: Deploy to EC2 via SSM
+      - name: Deploy to EC2 via SSM
         id: ssm
         run: |
           INSTANCE_ID="${{ secrets.EC2_INSTANCE_ID }}"
