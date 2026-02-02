@@ -1,3 +1,4 @@
+
 name: Deploy Python App via SSM
 
 on:
@@ -39,6 +40,7 @@ jobs:
               "set -e",
               "if [ ! -d \"'"$APP_DIR"'/.git\" ]; then git clone '"$REPO"' '"$APP_DIR"'; fi",
               "cd '"$APP_DIR"'",
+              "whoami",
               "git pull origin main",
               "python3 -u myfile.py > output.log 2>&1",
               "cat output.log"
