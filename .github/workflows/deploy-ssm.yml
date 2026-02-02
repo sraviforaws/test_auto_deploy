@@ -26,7 +26,6 @@ jobs:
         id: ssm
         run: |
           # Variables
-          set -euo pipefail
           INSTANCE_ID="${{ secrets.EC2_INSTANCE_ID }}"
           APP_DIR="/home/ec2-user/app"
           REPO="https://github.com/sraviforaws/test_auto_deploy.git"
