@@ -67,8 +67,15 @@ jobs:
           STDERR=$(aws ssm get-command-invocation --command-id "$CMD_ID" \
             --instance-id "$INSTANCE_ID" \
             --query "StandardErrorContent" --output text)
+          if [[ "$STATUS" != "Success" ]]; then
+          echo "SSM command failed with status: $STATUS"
+          echo "------ Errors ------"
+          echo "$STDERR"
+          exit 1  # Fail GitHub Actions step
+          fi
           if [ -n "$STDERR" ]; then
             echo "------ Errors ------"
             echo "$STDERR"
+            exit 1
           fi
 
