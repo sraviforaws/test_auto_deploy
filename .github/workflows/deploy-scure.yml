@@ -1,10 +1,12 @@
-name: Deploy
+name: Deploy to EC2 via SSM
 
+# Trigger on pushes to main branch
 on:
   push:
     branches:
       - main
 
+# Required permissions for OIDC
 permissions:
   id-token: write
   contents: read
@@ -12,11 +14,96 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS credentials using OIDC
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::885457519011:role/github-actions-deploy-role
-          aws-region: eu-north-1
+          aws-region: us-east-1
+
+      # Step 3: Deploy to EC2 via SSM
+      - name: Deploy to EC2 via SSM
+        id: ssm
+        run: |
+          INSTANCE_ID="${{ secrets.EC2_INSTANCE_ID }}"
+          APP_DIR="/home/ec2-user/app"
+          REPO="https://github.com/sraviforaws/test_auto_deploy.git"
+
+          echo "Sending SSM command to instance $INSTANCE_ID..."
+
+          CMD_ID=$(aws ssm send-command \
+            --region us-east-1 \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Actions deployment" \
+            --parameters 'commands=[
+              "set -e",
+              "export HOME=/home/ec2-user",
+              "echo \"Step 1: Checking if app directory exists...\"",
+              "if [ ! -d \"'"$APP_DIR"'/.git\" ]; then",
+              "  echo \"Directory not found. Cloning repo...\"",
+              "  git clone '"$REPO"' '"$APP_DIR"'",
+              "else",
+              "  echo \"Directory exists. Pulling latest changes...\"",
+              "  cd '"$APP_DIR"'",
+              "  git pull origin main",
+              "fi",
+              "git config --global --add safe.directory '"$APP_DIR"'",
+              "cd '"$APP_DIR"'",
+              "echo \"Step 2: Current user: $(whoami)\"",
+              "echo \"Step 3: Running Python script...\"",
+              "python3 -u myfile.py > output.log 2>&1",
+              "echo \"------ Python Output ------\"",
+              "cat output.log"
+            ]' \
+            --query "Command.CommandId" --output text)
+
+          echo "Command ID: $CMD_ID"
+
+          # Wait for SSM command to complete
+          STATUS="Pending"
+          while [[ "$STATUS" == "Pending" || "$STATUS" == "InProgress" ]]; do
+            sleep 3
+            STATUS=$(aws ssm list-command-invocations \
+              --region us-east-1 \
+              --command-id "$CMD_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" --output text)
+            echo "SSM command status: $STATUS"
+          done
+
+          # Fetch stdout and stderr
+          STDOUT=$(aws ssm get-command-invocation \
+            --region us-east-1 \
+            --command-id "$CMD_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query "StandardOutputContent" --output text)
+
+          STDERR=$(aws ssm get-command-invocation \
+            --region us-east-1 \
+            --command-id "$CMD_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query "StandardErrorContent" --output text)
+
+          # Print stdout
+          echo "$STDOUT"
+
+          # Fail workflow if SSM command failed
+          if [[ "$STATUS" != "Success" ]]; then
+            echo "SSM command failed with status: $STATUS"
+            echo "------ Errors ------"
+            echo "$STDERR"
+            exit 1
+          fi
+
+          # Print warnings/errors without failing
+          if [ -n "$STDERR" ]; then
+            echo "------ Warnings / Errors ------"
+            echo "$STDERR"
+          fi
